@@ -1,16 +1,32 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 
 import React from 'react'
 
 export const MainContext = createContext();
 
 export const GlobalProvider = (props) => {
+const [startUser, setStartUser] = useState([]);
 const [keyword, setKeyword] = useState("");
 const [users, setUsers] = useState([]);
 const [user, setUser] = useState([]);
 const [repos, setRepos] = useState([]);
 const [loading, setLoading] = useState(false);
 const [usersLoading, setUsersLoading] = useState(false);
+
+
+useEffect(() => {
+  const startUsers = async () => {
+    try {
+      const userData = await fetch('https://api.github.com/users');
+      const userJson = await userData.json();
+      setStartUser(userJson);
+    }
+    catch (err) {
+      console.log(err);
+    }
+  };
+  startUsers();
+}, []);
 
 
 
@@ -39,18 +55,34 @@ const onSubmit = (e) => {
 const getUser = async (id) => {
   setLoading(true);
   try {
-    const userDetail = users.find(us => us.id === id);
-    const userDetailData = await fetch(userDetail.url);    
-    await userDetailData.json()
-      .then((userDetailDataJson) => {
-        setUser(userDetailDataJson);
-      })
-    const reposData = await fetch(userDetail.repos_url); 
-     await reposData.json()
-        .then((reposDataJson) => {
-          setRepos(reposDataJson);
-          setLoading(false);
+    if(users.length !== 0) {
+      const userDetail = users.find(us => us.id === id);
+      const userDetailData = await fetch(userDetail.url);    
+      await userDetailData.json()
+        .then((userDetailDataJson) => {
+          setUser(userDetailDataJson);
         })
+      const reposData = await fetch(userDetail.repos_url); 
+       await reposData.json()
+          .then((reposDataJson) => {
+            setRepos(reposDataJson);
+            setLoading(false);
+          })
+    } else {
+      const userDetail = startUser.find(us => us.id === id);
+      const userDetailData = await fetch(userDetail.url);    
+      await userDetailData.json()
+        .then((userDetailDataJson) => {
+          setUser(userDetailDataJson);
+        })
+      const reposData = await fetch(userDetail.repos_url); 
+       await reposData.json()
+          .then((reposDataJson) => {
+            setRepos(reposDataJson);
+            setLoading(false);
+          })
+    }
+
   }
   catch(err) {
     console.log(err);
@@ -59,6 +91,7 @@ const getUser = async (id) => {
 
 
  const contextData = {
+  startUser,
   keyword,
   setKeyword,
   users,
